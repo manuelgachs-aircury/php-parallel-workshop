@@ -23,7 +23,7 @@ RUN docker-php-source extract
 # Build PHP with Zend Thread Safety (ZTS) enabled
 RUN cd /usr/src/php \
     && ./buildconf --force \
-    && ./configure --enable-zts \
+    && ./configure --enable-zts --with-curl \
     && make -j"$(nproc)" \
     && make install \
     && docker-php-source delete
@@ -33,6 +33,9 @@ RUN docker-php-ext-install \
     zip \
     pdo_mysql \
     curl
+
+# Verify cURL is installed
+RUN php -m | grep curl || { echo "cURL extension not loaded!"; exit 1; }
 
 # Install parallel extension manually from GitHub
 RUN git clone https://github.com/krakjoe/parallel.git /tmp/parallel \
