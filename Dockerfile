@@ -1,7 +1,7 @@
 # Use PHP 8.3 (latest stable) with CLI support as the base image
 FROM php:8.3-cli
 
-# Install dependencies
+# Install required dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libssl-dev \
     sqlite3 \
+    wget \
     libcurl4-openssl-dev \
     libsqlite3-dev \
     && apt-get clean \
@@ -20,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 # Download and extract PHP source code
 RUN docker-php-source extract
 
-# Build PHP with Zend Thread Safety (ZTS) enabled
+# Build PHP with Zend Thread Safety (ZTS) enabled (parallel requires ZTS)
 RUN cd /usr/src/php \
     && ./buildconf --force \
     && ./configure --enable-zts --with-curl \
@@ -38,20 +39,19 @@ RUN docker-php-ext-install \
 RUN php -m | grep curl || { echo "cURL extension not loaded!"; exit 1; }
 
 # Install parallel extension manually from GitHub
-RUN git clone https://github.com/krakjoe/parallel.git /tmp/parallel \
-    && cd /tmp/parallel \
-    && git checkout tags/v1.2.6 \
+RUN git clone https://github.com/krakjoe/parallel.git \
+    && cd parallel \
     && phpize \
     && ./configure --enable-parallel \
-    && make -j"$(nproc)" \
-    && make install \
-    && cd / && rm -rf /tmp/parallel
+    && make \
+    && make test \
+    && make install
 
-# Enable parallel extension
-RUN docker-php-ext-enable parallel
+# Enable parallel extension in php.ini
+RUN echo "extension=parallel.so" > /usr/local/lib/php.ini
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Verify parallel extension is installed
+RUN php -m | grep parallel || { echo "Parallel extension not loaded!"; exit 1; }
 
 # Set working directory
 WORKDIR /var/www/html
