@@ -1,0 +1,63 @@
+# Use PHP 8.3 (latest stable) with CLI support as the base image
+FROM php:8.3-cli
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    autoconf \
+    build-essential \
+    ca-certificates \
+    libxml2-dev \
+    libssl-dev \
+    sqlite3 \
+    libcurl4-openssl-dev \
+    libsqlite3-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and extract PHP source code
+RUN docker-php-source extract
+
+# Build PHP with Zend Thread Safety (ZTS) enabled
+RUN cd /usr/src/php \
+    && ./buildconf --force \
+    && ./configure --enable-zts \
+    && make -j"$(nproc)" \
+    && make install \
+    && docker-php-source delete
+
+# Install PHP extensions
+RUN docker-php-ext-install \
+    zip \
+    pdo_mysql \
+    curl
+
+# Install parallel extension manually from GitHub
+RUN git clone https://github.com/krakjoe/parallel.git /tmp/parallel \
+    && cd /tmp/parallel \
+    && git checkout tags/v1.2.6 \
+    && phpize \
+    && ./configure --enable-parallel \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd / && rm -rf /tmp/parallel
+
+# Enable parallel extension
+RUN docker-php-ext-enable parallel
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Set proper permissions for mounted volumes
+RUN chown -R www-data:www-data /var/www/html
+
+# Expose port 9000 (if needed)
+EXPOSE 9000
+
+# Run PHP CLI server
+CMD ["php", "-S", "0.0.0.0:9000"]
