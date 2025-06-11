@@ -1,5 +1,6 @@
 <?php declare(strict_types=1);
 
+require_once 'src/Database.php';
 require_once 'src/Scryfall.php';
 
 use parallel\{Runtime, Channel, Future};
@@ -66,10 +67,13 @@ class ThreadPool
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Pattern
-function exampleTask(): string
+function load_card(): string
 {
     $client = new Scryfall();
     $card = $client->fetch_random();
+
+    $db = new Database('cards_tp.db', false, false);
+    $db->insert_card($card['scryfall_id'], $card['name'], $card['set_code'], $card['collector_number']);
 
     return "Card {$card['name']} | {$card['set_code']} completed";
 }
@@ -79,11 +83,12 @@ function run_thread_pool(int $max_threads, int $n_tasks): void
     $tasks_buffer = new Channel($n_tasks + $max_threads);
     $results_buffer = new Channel($n_tasks + $max_threads);
     $threads = ThreadPool::create_threads($max_threads);
-
+    new Database('cards_tp.db');
+    
     for ($i = 1; $i <= $n_tasks; ++$i) {
         ThreadPool::send_msg("Adding task {$i}");
         $tasks_buffer->send(function () use ($i) {
-            return exampleTask();
+            return load_card();
         });
     }
 

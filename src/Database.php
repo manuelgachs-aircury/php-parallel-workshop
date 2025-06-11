@@ -4,17 +4,27 @@ class Database
 {
     private SQLite3 $connection;
 
-    public function __construct(string $dbName)
+    public function __construct(string $dbName, bool $tear_down = true, bool $init = true)
     {
         $this->connection = new SQLite3($dbName);
-        $this->init_db();
+
+        if ($tear_down) {
+            $this->tear_down();
+        }
+
+        if ($init) {
+            $this->init_db();
+        }
+    }
+
+    private function tear_down(): void
+    {
+        // Destroy everything
+        $this->connection->exec("DROP TABLE IF EXISTS cards");
     }
 
     private function init_db(): void
     {
-        // Destroy everything
-        $this->connection->exec("DROP TABLE IF EXISTS cards");
-
         $this->connection->exec("CREATE TABLE IF NOT EXISTS cards (
             id INTEGER PRIMARY KEY,
             scryfall_id TEXT,
@@ -26,6 +36,7 @@ class Database
 
     public function insert_card(string $scryfall_id, string $name, string $set_code, string $collector_number): void
     {
+        $this->connection->busyTimeout(1000000); // Wait for the DB to be unlocked
         $stmt = $this->connection->prepare("
             INSERT INTO cards (scryfall_id, name, set_code, collector_number) VALUES 
             (:scryfall_id, :name, :set_code, :collector_number)
