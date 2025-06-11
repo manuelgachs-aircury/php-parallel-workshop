@@ -24,7 +24,7 @@ RUN docker-php-source extract
 # Build PHP with Zend Thread Safety (ZTS) enabled (parallel requires ZTS)
 RUN cd /usr/src/php \
     && ./buildconf --force \
-    && ./configure --enable-zts --with-curl \
+    && ./configure --enable-zts --with-curl --enable-pcntl \
     && make -j"$(nproc)" \
     && make install \
     && docker-php-source delete

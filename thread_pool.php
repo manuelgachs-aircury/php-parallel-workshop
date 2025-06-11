@@ -25,7 +25,7 @@ class ThreadPool
             }
 
             $result = $task();
-            $result_buffer->send("Thread {$thread_name}:" . $result);
+            $result_buffer->send($result);
             ThreadPool::send_msg("Thread {$thread_name} finished a task");
         }
     }
