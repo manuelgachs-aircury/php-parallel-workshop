@@ -25,9 +25,8 @@ class ThreadPool
                 break;
             }
 
-            $result = $task();
+            $result = $task($thread_name);
             $result_buffer->send($result);
-            ThreadPool::send_msg("Thread {$thread_name} finished a task");
         }
     }
 
@@ -45,8 +44,12 @@ class ThreadPool
     public static function receive_results(Channel $result_buffer, int $n_tasks): void
     {
         ThreadPool::send_msg("Recollecting task results");
+        $results = [];
         for  ($i = 0; $i < $n_tasks; ++$i) {
-            $result = $result_buffer->recv();
+            $results[] = $result_buffer->recv();
+        }
+
+        foreach ($results as $result) {
             ThreadPool::send_msg($result);
         }
     }
@@ -67,15 +70,24 @@ class ThreadPool
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Pattern
-function load_card(): string
+function load_card(int $thread_name, int $task_num): string
 {
+    $start = microtime(true);
+    // Make some task randomly harder
+    if (24 > rand(1, 50)) {
+        sleep(1);
+    }
+
     $client = new Scryfall();
     $card = $client->fetch_random();
 
     $db = new Database('cards_tp.db', false, false);
     $db->insert_card($card['scryfall_id'], $card['name'], $card['set_code'], $card['collector_number']);
 
-    return "Card {$card['name']} | {$card['set_code']} completed";
+    $time_elapsed_secs = round(microtime(true) - $start, 4);
+    ThreadPool::send_msg("Thread {$thread_name} finished task {$task_num} ({$time_elapsed_secs}s)");
+
+    return "Card {$card['name']} | {$card['set_code']} fetched";
 }
 
 function run_thread_pool(int $max_threads, int $n_tasks): void
@@ -87,8 +99,8 @@ function run_thread_pool(int $max_threads, int $n_tasks): void
     
     for ($i = 1; $i <= $n_tasks; ++$i) {
         ThreadPool::send_msg("Adding task {$i}");
-        $tasks_buffer->send(function () use ($i) {
-            return load_card();
+        $tasks_buffer->send(function (int $thread_name) use ($i) {
+            return load_card($thread_name, $i);
         });
     }
 
