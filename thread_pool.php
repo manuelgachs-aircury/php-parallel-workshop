@@ -11,7 +11,7 @@ class ThreadPool
 {
     public static function send_msg(string $msg): void
     {
-        $now = date("Y-m-d H:i:s");
+        $now = date_format(date_create(), 'H:i:s.u');
         printf("[%s] %s".PHP_EOL, $now, $msg);
     }
 
@@ -34,8 +34,8 @@ class ThreadPool
     {
         ThreadPool::send_msg("Creating threads");
         $threads = [];
-        for ($i = 0; $i < $n_threads; ++$i) {
-            $threads[] = new Runtime();
+        for ($i = 1; $i <= $n_threads; ++$i) {
+            $threads[$i] = new Runtime();
         }
 
         return $threads;
@@ -95,9 +95,9 @@ function run_thread_pool(int $max_threads, int $n_tasks): void
     $tasks_buffer = new Channel($n_tasks + $max_threads);
     $results_buffer = new Channel($n_tasks + $max_threads);
     $threads = ThreadPool::create_threads($max_threads);
-    new Database('cards_tp.db');
+    new Database('cards_tp.db'); // For tear-down and init
 
-    ThreadPool::send_msg("Adding tasks 1 to {$n_tasks}")
+    ThreadPool::send_msg("Adding tasks 1 to {$n_tasks}");
     for ($i = 1; $i <= $n_tasks; ++$i) {
         $tasks_buffer->send(function (int $thread_name) use ($i) {
             return load_card($thread_name, $i);

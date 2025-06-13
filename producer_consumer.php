@@ -11,7 +11,7 @@ class ProducerConsumer
 {
     static function send_msg(string $msg): void
     {
-        $now = date("Y-m-d H:i:s");
+        $now = date_format(date_create(), 'H:i:s.u');
         printf("[%s] %s".PHP_EOL, $now, $msg);
     }
 
