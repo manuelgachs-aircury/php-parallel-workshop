@@ -31,12 +31,18 @@ function fork_loop(): void
         $pid = pcntl_fork();
         $current_processes++;
         if ($pid) {
+            // Parent
             printf("Process with PID %d forked (current_processes = %d)" . PHP_EOL, $pid, $current_processes);
+        } else {
+            // Child
+            // Does nothing for the parent (memory space is not shared)
+            $current_processes = 'new value';
         }
         sleep(1);
     }
     if ($pid === 0) {
-        printf("Child process with PID (current_processes = %d)" . PHP_EOL, $current_processes);
+        // 'Task'
+        printf("Child process with PID (current_processes = %s)" . PHP_EOL, $current_processes);
         exit(0);
     }
 
@@ -45,7 +51,7 @@ function fork_loop(): void
 
 function fork_loop_with_exception(): void
 {
-    $max_processes = 3;
+    $max_processes = 4;
     $current_processes = 0;
     $pid = getmypid();
 
@@ -73,6 +79,6 @@ function fork_loop_with_exception(): void
     pcntl_wait($status);
 }
 
-simple_fork();
-//fork_loop();
+//simple_fork();
+fork_loop();
 //fork_loop_with_exception();
