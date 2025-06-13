@@ -12,7 +12,7 @@ function simple_fork(): void
         exit(11);
     }
 
-    pcntl_waitpid($pid, $status);
+    pcntl_wait($status);
     if (pcntl_wifexited($status)) {
         printf("Child process exited with status %d" . PHP_EOL, pcntl_wexitstatus($status));
     }
@@ -65,6 +65,7 @@ function fork_loop_with_exception(): void
         if (getmypid() % 2 === 0) {
             throw new RuntimeException("Random exception");
         }
+        // 'Task'
         printf("Child process with PID exited correctly" . PHP_EOL);
         exit(0);
     }
@@ -72,6 +73,6 @@ function fork_loop_with_exception(): void
     pcntl_wait($status);
 }
 
-//simple_fork();
+simple_fork();
 //fork_loop();
-fork_loop_with_exception();
+//fork_loop_with_exception();
