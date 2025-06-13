@@ -79,6 +79,12 @@ function fork_loop_with_exception(): void
     pcntl_wait($status);
 }
 
-//simple_fork();
-fork_loop();
-//fork_loop_with_exception();
+$to_run = $argv[1];
+
+if ('simple' ===  $to_run) {
+    simple_fork();
+} elseif ('loop' === $to_run) {
+    fork_loop();
+} else {
+    fork_loop_with_exception();
+}

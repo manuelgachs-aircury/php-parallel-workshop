@@ -3,5 +3,10 @@
 require_once 'producer_consumer.php';
 require_once 'thread_pool.php';
 
-//run_producer_consumer('cards.db', 6, 8, 5);
-run_thread_pool(4, 12);
+$to_run = $argv[1];
+
+if ('pc' ===  $to_run) {
+    run_producer_consumer('cards.db', 6, 8, 5);
+} else {
+    run_thread_pool(4, 12);
+}
